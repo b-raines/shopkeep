@@ -7,27 +7,61 @@
 //
 
 import Foundation
+import RealmSwift
+import ReactiveCocoa
+import Result
 
-struct Product {
-    static let persistenceKey = "products"
-    let title: String
-    let priceInCents: Int
-    
-    static func all() -> [Product] {
-        return NSUserDefaults.standardUserDefaults().stringArrayForKey(persistenceKey)?.flatMap {
-            return Product(title: $0)
-        } ?? []
+class Product: Object {
+    enum Error {
+        case IncorrectCategory(category: String)
+        case EmptyTitle
+        
+        var message: String {
+            switch self {
+            case .IncorrectCategory(let category):
+                return "\(category) is not an allowed category"
+            case .EmptyTitle:
+                return "You must enter a name"
+            }
+        }
     }
     
-    init(title: String) {
-        self.title = title
-        self.priceInCents = NSUserDefaults.standardUserDefaults().integerForKey(title)
+    dynamic var title: String = ""
+    dynamic var priceInCents: Int = 0
+    dynamic var complete: Bool = false
+    dynamic var subCategory: String = "Other"
+    var errors = [String]()
+    
+    static let allowedSubCategories = ["Dairy", "Bread", "Produce", "Meat", "Frozen", "Other"]
+    
+    override static func ignoredProperties() -> [String] {
+        return ["errors"]
     }
     
-    func displayPrice() -> String? {
-        let formatter = NSNumberFormatter()
-        formatter.numberStyle = .CurrencyStyle
-        formatter.locale = NSLocale(localeIdentifier: "en_US")
-        return formatter.stringFromNumber(Float(priceInCents)/100.0)
+    func save(update update: Bool = false, errorHandler: ((ErrorType) -> ())? = nil) {
+        errors = []
+        validate()
+        guard errors.isEmpty else { return }
+        Persistence().add(self, update: update) { [weak self] error in
+            self?.errors.append(String(error))
+        }
+    }
+    
+    func delete() {
+        Persistence().delete(self)
+    }
+    
+    private func validate() -> Bool {
+        var valid = true
+        if !Product.allowedSubCategories.contains(subCategory) {
+            errors.append(Error.IncorrectCategory(category: subCategory).message)
+            valid = false
+        }
+        if title.isEmpty {
+            errors.append(Error.EmptyTitle.message)
+            valid = false
+        }
+        
+        return valid
     }
 }

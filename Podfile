@@ -2,9 +2,8 @@
 # platform :ios, '9.0'
 
 target 'ShoppingList' do
-  # Comment this line if you're not using Swift and don't want to use dynamic frameworks
   use_frameworks!
 
-  # Pods for ShoppingList
-
+  pod 'ReactiveCocoa'
+  pod 'RealmSwift'
 end
