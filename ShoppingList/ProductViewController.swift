@@ -29,6 +29,9 @@ class ProductViewController: UIViewController {
         disposables.append(product.producer.ignoreNil().startWithNext { [weak self] prod in
             self?.nameTextField.text = prod.title
             self?.priceTextField.text = CurrencyFormatter().displayPrice(prod.priceInCents)
+            if let row = Product.allowedSubCategories.indexOf(prod.subCategory) {
+                self?.categoryPicker.selectRow(row, inComponent: 0, animated: false)
+            }
         })
         
         
